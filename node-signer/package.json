@@ -1,0 +1,24 @@
+{
+  "name": "bundled-signatures",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "0xsequence": "^0.43.21",
+    "@types/body-parser": "^1.19.2",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "cross-fetch": "^4.0.0",
+    "dotenv": "^16.0.3",
+    "ethers": "5.7.2",
+    "express": "^4.18.2",
+    "web3": "^1.9.0"
+  }
+}

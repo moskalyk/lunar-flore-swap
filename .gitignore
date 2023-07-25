@@ -1,0 +1,4 @@
+node-signer/node_modules
+node-signer/.env
+go-cmd/.env
+pricer_cargo/target
