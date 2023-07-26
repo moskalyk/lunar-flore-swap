@@ -29,40 +29,56 @@ const providers: any = {
     ANKR_RPC: process.env.ANKR_RPC
 }
 
-app.post('/sig', async (req: any, res: any) => {
-    try{
-        // const result = await fetch('http://137.220.54.108:8000/api/rpc/latest')
-        // const provider_url = (await result.json()).provider
-        const provider = new ethers.providers.JsonRpcProvider(providers['SEQUENCE_RPC'])
-        // const blockNumber = await provider.getBlockNumber()
-        // console.log(req.body.celcius)
-        // console.log(req.body.tokenID)
-        // console.log(req.body.address)
+function getPriceWithDeviation(price, genesisTimestamp) {
+    const millisecondsInCycle = 2555200 * 1000; // 2555200 seconds to milliseconds
+    const currentTime = Date.now();
+    const timeDifference = currentTime - genesisTimestamp;
 
-        const hash = utils.solidityKeccak256(['uint', 'uint'], [20, 100])
+    // Calculate the phase of the sine wave (ranging from 0 to 2 * Math.PI)
+    const phase = (Math.PI * timeDifference) / millisecondsInCycle;
+
+    // Calculate the deviation factor using the sine function (oscillating between -1 and 1)
+    const deviationFactor = Math.sin(phase);
+
+    // Calculate the deviation amount (5% of the price) and apply it to the original price
+    const deviationAmount = 0.05 * deviationFactor;
+
+    // Calculate the final price after deviation
+    const finalPrice = price * (1 + deviationAmount);
+
+    return finalPrice;
+}
+
+app.get('/signer/default', async (req: any, res: any) => {
+    try{
+        const price = 100
+        const genesisTimestamp = 1689618660000; // Replace with the actual genesis timestamp
+        const finalPrice = getPriceWithDeviation(price, genesisTimestamp);
+        const bigNumberValue = ethers.BigNumber.from((finalPrice*10**18).toString());
+        const provider = new ethers.providers.JsonRpcProvider(providers['SEQUENCE_RPC'])
+        const blockNumber = await provider.getBlockNumber()
+        const baseAddress = '0x2791bca1f2de4661ed88a30c99a7a9449aa84174'
+        const hash = utils.solidityKeccak256(['uint', 'uint', 'address', 'address'], [bigNumberValue, blockNumber, req.body.address ? req.body.address : '0xbCDCC8D0DF0f459f034A7fbD0A6ce672AF0f0953', baseAddress])
         var signature = await wallet.signMessage(ethers.utils.arrayify(hash))
-        res.send({sig: signature, status: 200})
+        res.send({sig: signature, price: finalPrice, status: 200})
     }catch(e){
         console.log(e)
         res.send({msg: JSON.stringify(e), status: 500})
     }
 })
 
-app.get('/', async (req: any, res: any) => {
+app.post('/signer/address', async (req: any, res: any) => {
     try{
-        const result = await fetch('http://137.220.54.108:8000/api/rpc/latest')
-        const provider_url = (await result.json()).provider
-        const provider = new ethers.providers.JsonRpcProvider(providers[provider_url])
+        const price = 100
+        const genesisTimestamp = 1689618660000; // Replace with the actual genesis timestamp
+        const finalPrice = getPriceWithDeviation(price, genesisTimestamp);
+        const bigNumberValue = ethers.BigNumber.from((finalPrice*10**18).toString());
+        const provider = new ethers.providers.JsonRpcProvider(providers['SEQUENCE_RPC'])
         const blockNumber = await provider.getBlockNumber()
-        console.log(req.body.celcius)
-        console.log(req.body.tokenID)
-        const prices = [11, 22, 33, 44, 55, 66, 77, 88, 99, 111]
-        // const hash = utils.solidityKeccak256(['uint','address','uint','uint','uint'], [req.body.celcius, req.body.address, req.body.tokenID, prices[req.body.tokenID]*req.body.celcius, blockNumber])
-        const hash = utils.solidityKeccak256(['uint', 'uint'], [23, 100])
-        console.log(ethers.utils.arrayify(hash))
-        console.log(hash)
+        const baseAddress = '0x2791bca1f2de4661ed88a30c99a7a9449aa84174'
+        const hash = utils.solidityKeccak256(['uint', 'uint', 'address', 'address'], [Math.floor(finalPrice), blockNumber, req.body.address ? req.body.address : '0xbCDCC8D0DF0f459f034A7fbD0A6ce672AF0f0953', baseAddress])
         var signature = await wallet.signMessage(ethers.utils.arrayify(hash))
-        res.send({sig: signature, price: prices[req.body.tokenID]*req.body.celcius, block: blockNumber, status: 200})
+        res.send({sig: signature, price: finalPrice, block: blockNumber, status: 200})
     }catch(e){
         console.log(e)
         res.send({msg: JSON.stringify(e), status: 500})
