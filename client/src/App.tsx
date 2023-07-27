@@ -31,16 +31,18 @@ function App() {
     const wallet = sequence.getWallet()
     const details = await wallet.connect({
       app: 'FloreSwap',
-      networkId: 137
+      networkId: 137,
+      authorize: true
     })
     if(details.connected){
       setAddress(details.session?.accountAddress!)
       setIsLoggedIn(true)
+      console.log(details)
     }
   }
 
   const performSwap = async () => {
-    const floreSwapContract = '0x98ba6152F1Bd913771AA80121A0EdbdA34BC9574'
+    const floreSwapContract = '0x3B685C2c3F35Bd5275a6340700E769b6b82a3A20'
     const flore20ContractAddress = '0x6efa2ea57b5ea64d088796af72eddc7f5393dd2b'
 
     const wallet = await sequence.getWallet()
@@ -59,7 +61,7 @@ function App() {
     // TODO: do a price request
     // const res = await fetch('http://localhost:8000/price')
 
-    const res = await fetch("http://localhost:5000/signer/address", {
+    const res = await fetch("http://137.220.52.246:5000/signer/address", {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -112,7 +114,7 @@ function App() {
   }
 
   const getDefaultPrice = async () => {
-    const res = await fetch('http://localhost:5000/signer/default')
+    const res = await fetch('http://137.220.52.246:5000/signer/default')
     const json = await res.json()
     console.log(json)
     setDefaultSwap(json.price)
@@ -122,12 +124,11 @@ function App() {
     const indexer = new SequenceIndexerClient('https://polygon-indexer.sequence.app')
 
     // try any contract and account address you'd like :)
-    const accountAddress = '0x98ba6152F1Bd913771AA80121A0EdbdA34BC9574'
+    const accountAddress = '0x3B685C2c3F35Bd5275a6340700E769b6b82a3A20'
 
     // query Sequence Indexer for all nft balances of the account on Polygon
     const balances = await indexer.getTokenBalances({
         accountAddress: accountAddress,
-        includeMetadata: true
     })
     // console.log('collection of items:', nftBalances)
     balances.balances.map((token: any)=> {
@@ -140,13 +141,14 @@ function App() {
   const provider = new ethers.providers.JsonRpcProvider('https://nodes.sequence.app/polygon');
 
   // Create a contract instance using the ABI and contract address
-  const contract = new ethers.Contract('0x98ba6152F1Bd913771AA80121A0EdbdA34BC9574', abi, provider);
+  const contract = new ethers.Contract('0x3B685C2c3F35Bd5275a6340700E769b6b82a3A20', abi, provider);
 
   try {
     // Call the 'calculateAllowedSwapAmount' function on the contract
-    const result = await contract.calculateAllowedSwapAmount(accountAddress);
+    console.log(address)
+    const result = await contract.getRemainingSwapAmount(address);
     console.log('Result:', result.toString());
-    setAllowanceAmount(result.toString())
+    setAllowanceAmount(Number(result.toString())/10**6)
   } catch (error) {
     console.error('Error calling function:', error);
   }
@@ -154,13 +156,12 @@ function App() {
 
   React.useEffect(() => {
     getDefaultPrice()
-    setAllowanceAmount(100)
     getBankBalanc()
     setInterval(() => {
       getDefaultPrice()
       getBankBalanc()
     }, 7000)
-  }, [])
+  }, [address])
 
   return (
     <div className="App">
@@ -200,7 +201,7 @@ function App() {
         <Box justifyContent={'center'}>
           <p style={{fontSize: '22px', paddingRight: '0px'}}>{usdcBalance}</p>
 
-          <p style={{fontSize: '22px', paddingLeft: '200px'}}>{allowanceAmount/10**6}</p>
+          <p style={{fontSize: '22px', paddingLeft: '200px'}}>{allowanceAmount}</p>
         </Box>
       </Box>
       <br/>
